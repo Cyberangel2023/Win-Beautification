@@ -1,31 +1,32 @@
 #ifndef WALLPAPER_H
 #define WALLPAPER_H
 
-#include <iostream>
 #include <windows.h>
-#include <string>
+#include <QString>
+#include <QSettings>
 
-enum class WallpaperStyle {
-    Tile = 0,     // Æ½ÆÌ
-    Center = 1,   // ¾ÓÖĞ
-    Stretch = 2,  // À­Éì
-    Fit = 3,      // ÊÊÓ¦
-    Fill = 4      // Ìî³ä
-};
+#include "WallpaperStyle.h"
 
-
-class Wallpaper {
+class Wallpaper
+{
 public:
-	Wallpaper(WallpaperStyle style, const std::wstring wallpaperPath);
-	~Wallpaper();
-
-public:
-    bool virtual SetWallpaperStyle();
-    bool virtual SetWallpaper();
+    Wallpaper(WallpaperStyle style, const QString& wallpaperPath);
+    ~Wallpaper();
 
 private:
-    WallpaperStyle style;
-    std::wstring wallpaperPath;
+    // è®¾ç½®å£çº¸æ ·å¼
+    bool SetWallpaperStyle();
+    // è®¾ç½®å£çº¸å›¾ç‰‡
+    bool SetWallpaper();
+
+public:
+    void setStyle(WallpaperStyle style) {
+        this->style = style;
+    }
+
+private:
+    WallpaperStyle style; // å£çº¸æ ·å¼
+    QString wallpaperPath; // å£çº¸å›¾ç‰‡è·¯å¾„
 };
 
 #endif // WALLPAPER_H

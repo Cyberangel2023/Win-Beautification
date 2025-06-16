@@ -1,13 +1,28 @@
-#include <iostream>
-#include "Wallpaper.h"
+#include "MainScene.h"
+#include "WallpaperStyle.h"
+#include "wallpaper.h"
+#include "fileset.h"
 
-int main() {
-    // ���ñ�ֽ��ʽ
-    //WallpaperStyle style = WallpaperStyle::Fill;
-    // ���ñ�ֽ·��
-    //std::wstring wallpaperPath = L"C:\\Users\\25444\\Desktop\\imgs\\Kiana1.jpg";
-    //Wallpaper* wallpaper = new Wallpaper(style, wallpaperPath);
+#include <windows.h>
+#include <shlobj.h>  // 包含SHGetKnownFolderPath所需的头文件
+#include <wrl/client.h> // 用于COM接口的智能指针（可选，但推荐）
+#include <QString>
+#include <QApplication>
 
+using namespace std;
 
-    return 0;
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    // 设置壁纸样式
+    WallpaperStyle style = WallpaperStyle::Fill;
+    // 设置壁纸路径
+    QString wallpaperPath = "C:\\Users\\25444\\Desktop\\imgs\\Kiana1.jpg";
+    // 使用QScopedPointer管理Wallpaper和FileSet的生命周期
+    QScopedPointer<Wallpaper> wallpaper(new Wallpaper(style, wallpaperPath));
+    QScopedPointer<FileSet> fileSet(new FileSet());
+
+    MainScene w;
+    w.show();
+    return a.exec();
 }
