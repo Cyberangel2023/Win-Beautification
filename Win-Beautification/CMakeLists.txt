@@ -25,10 +25,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         wallpaper.h wallpaper.cpp
         WallpaperStyle.h
-        fileset.h fileset.cpp
+        fileset.h
         ArchorPane.h
         ScrollPane.h
         Image.h
+        fileset.cpp
 
 
 

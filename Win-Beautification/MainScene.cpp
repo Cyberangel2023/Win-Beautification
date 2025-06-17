@@ -21,7 +21,7 @@ MainScene::MainScene(QWidget *parent)
     this->setAttribute(Qt::WA_TranslucentBackground); // 去除窗口
 
     // 初始化 ArchorPane
-    this->anchorPane.reset(new ArchorPane(this));
+    this->archorPane = new ArchorPane(this);
 
     // 初始化 scrollPane
     this->scrollPane = new ScrollPane();
@@ -42,14 +42,14 @@ MainScene::MainScene(QWidget *parent)
     this->scrollPane->setWidget(contentWidget);
 
     // 将 ScrollPane 添加到 ArchorPane 的布局中
-    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(this->anchorPane->layout());
+    QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(this->archorPane->layout());
     layout->addWidget(this->scrollPane);
 
     // 将 ArchorPane 添加到 MainScene 的布局中
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(availableRect.right() / 2 - 495, availableRect.bottom() - 80,
                                    availableRect.right() / 2 - 495, 10);
-    mainLayout->addWidget(this->anchorPane.data());
+    mainLayout->addWidget(this->archorPane);
 
     setLayout(mainLayout);
 }
@@ -61,7 +61,7 @@ MainScene::~MainScene()
 
 void MainScene::paintEvent(QPaintEvent *event)
 {
-
+    Q_UNUSED(event);
 }
 
 void MainScene::listDesktopFiles() {
@@ -89,4 +89,56 @@ void MainScene::listDesktopFiles() {
         Image* img = new Image(fileName, filePath, this);
         icons.insert(fileName, img);
     }
+}
+
+void MainScene::mousePressEvent(QMouseEvent *event) {
+    if (event->button() == Qt::LeftButton) {
+        // 检查点击是否在某个 Image 控件上
+        QWidget *child = childAt(event->pos());
+        if (child) {
+            Image *clickedImage = qobject_cast<Image*>(child);
+            if (clickedImage) {
+                // 处理 Image 点击
+                bool ctrlPressed = qApp->keyboardModifiers() & Qt::ControlModifier;
+                bool shiftPressed = qApp->keyboardModifiers() & Qt::ShiftModifier;
+
+                if (ctrlPressed) {
+                    // Ctrl 多选：切换选中状态
+                    if (this->selectedFiles.contains(clickedImage)) {
+                        this->selectedFiles.remove(clickedImage);
+                        clickedImage->reset();
+                    } else {
+                        this->selectedFiles.insert(clickedImage);
+                        clickedImage->setSelected(true);
+                        clickedImage->setStyleSheet("background-color: rgba(255, 255, 255, 64);");
+                    }
+                } else if (shiftPressed && !this->selectedFiles.isEmpty()) {
+                    // Shift 多选：从最后一个选中的 Image 到当前点击的 Image 之间的所有 Image 都被选中
+                    // 这里需要实现 Shift 多选逻辑
+                } else {
+                    // 单选：清除之前的选中状态，选中当前点击的 Image
+                    foreach (Image *img, this->selectedFiles) {
+                        img->reset();
+                    }
+                    this->selectedFiles.clear();
+                    this->selectedFiles.insert(clickedImage);
+                    clickedImage->setSelected(true);
+                }
+            } else {
+                // 点击了非 Image 控件（例如背景控件）
+                foreach (Image *img, this->selectedFiles) {
+                    img->reset();
+                }
+                this->selectedFiles.clear();
+            }
+        } else {
+            qDebug() << "132";
+        }
+    } else if (event->button() == Qt::RightButton) {
+        // 右键点击事件
+    }
+}
+
+void MainScene::mouseReleaseEvent(QMouseEvent *event) {
+    // 可以在这里处理鼠标释放事件
 }

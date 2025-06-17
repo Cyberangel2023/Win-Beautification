@@ -10,7 +10,7 @@
 class ScrollPane : public QScrollArea {
     Q_OBJECT
 public:
-    explicit ScrollPane(QWidget* parent = nullptr) : QScrollArea(parent) {
+    explicit ScrollPane(QWidget* parent = nullptr) : QScrollArea(parent), leftHide(0) {
         // 设置横向滚条
         setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -32,12 +32,23 @@ protected:
         // 处理滚轮事件，实现横向滚动
         if (event->angleDelta().y() != 0) {
             int scrollAmount = event->angleDelta().y() > 0 ? -40 : 40;
+            //qDebug() << scrollAmount;
             horizontalScrollBar()->setValue(horizontalScrollBar()->value() + scrollAmount);
+            //qDebug() << horizontalScrollBar()->value();
+            this->leftHide = horizontalScrollBar()->value();
             event->accept();
         } else {
             QScrollArea::wheelEvent(event);
         }
     }
+
+public:
+    int getLeftHide() {
+        return this->leftHide;
+    }
+
+private:
+    int leftHide;
 };
 
 #endif // SCROLLPANE_H

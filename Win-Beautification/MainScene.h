@@ -9,6 +9,7 @@
 #include <QFrame>
 #include <QLabel>
 #include <QMap>
+#include <QList>
 #include <QDir>
 #include <QFileInfo>
 #include <QIcon>
@@ -35,10 +36,26 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
     void listDesktopFiles();
     QIcon getIconForFile(const QFileInfo &fileInfo);
+
+public:
+    // 其他成员函数
+    QSet<Image*> getSelected() {
+        return selectedFiles;
+    }
+
+    void addSelected(Image file) {
+        selectedFiles.insert(&file);
+    }
+
+    int getSelectedSize() {
+        return selectedFiles.size();
+    }
 
 private:
     Ui::MainScene *ui;
@@ -47,9 +64,11 @@ private:
     QRect screenRect; // 屏幕大小
     QRect availableRect;  // 可用区域大小
 
-    QScopedPointer<ArchorPane> anchorPane;
+    ArchorPane* archorPane;
     ScrollPane* scrollPane;
     QMap<QString, Image*> icons;
+
+    QSet<Image*> selectedFiles;
 };
 
 #endif // MAINSCENE_H

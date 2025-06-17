@@ -8,13 +8,18 @@
 #include <QFileInfo>
 #include <QIcon>
 #include <QFileIconProvider>
+#include <QCursor>
+#include <QPoint>
+#include <QRect>
+#include <QUrl>
+#include <QDesktopServices>
 
 class Image : public QLabel {
     Q_OBJECT
 
 public:
     Image(const QString &name, const QString& filePath, QWidget *parent = nullptr)
-        : QLabel(parent), m_filePath(filePath) {
+        : QLabel(parent), m_filePath(filePath), m_selected(false) {
         // 设置图片
         QPixmap pixmap;
         QFileInfo fileInfo(filePath);
@@ -36,9 +41,7 @@ public:
         setMouseTracking(true);
         setAttribute(Qt::WA_Hover);
         connect(this, &Image::hovered, this, &Image::onHovered);
-        connect(this, &Image::clicked, this, &Image::onClicked);
         connect(this, &Image::doubleClicked, this, &Image::onDoubleClicked);
-        connect(this, &Image::rightClicked, this, &Image::onMenuEvent);
     }
 
     QString getFilePath() const {
@@ -50,13 +53,6 @@ public:
     }
 
 protected:
-    void mousePressEvent(QMouseEvent *event) override {
-        if (event->button() == Qt::LeftButton) {
-            emit clicked();
-        }
-        QLabel::mousePressEvent(event);
-    }
-
     void mouseDoubleClickEvent(QMouseEvent *event) override {
         if (event->button() == Qt::LeftButton) {
             emit doubleClicked();
@@ -64,46 +60,65 @@ protected:
         QLabel::mouseDoubleClickEvent(event);
     }
 
-    void contextMenuEvent(QContextMenuEvent *event) override {
-        emit rightClicked(event->pos());
-        QLabel::contextMenuEvent(event);
-    }
-
     bool event(QEvent *event) override {
         if (event->type() == QEvent::HoverEnter) {
             emit hovered();
-        } else if (event->type() == QEvent::HoverLeave) {
-            setStyleSheet("background: transparent;");
+        } else {
+            if (!this->m_selected) {
+                if (event->type() == QEvent::HoverLeave) {
+                    setStyleSheet("background: transparent;");
+                } else if (event->type() == QEvent::Wheel) {
+                    setStyleSheet("background: transparent;");
+                }
+            } else {
+                if (event->type() == QEvent::HoverLeave) {
+                    setStyleSheet("background-color: rgba(255, 255, 255, 64);");
+                } else if (event->type() == QEvent::Wheel) {
+                    setStyleSheet("background-color: rgba(255, 255, 255, 64);");
+                }
+            }
         }
         return QLabel::event(event);
     }
 
 signals:
-    void clicked();
     void hovered();
     void doubleClicked();
-    void rightClicked(const QPoint &pos);
 
 private slots:
     void onHovered() {
         // 在这里处理鼠标悬停事件
-        setStyleSheet("background-color: rgba(255, 255, 255, 64);");
+        setStyleSheet("background-color: rgba(255, 255, 255, 32);");
     }
 
-    void onClicked() {
-        // 在这里处理鼠标左键点击事件
-    }
 
     void onDoubleClicked() {
         // 在这里处理鼠标左键双击事件
+        QUrl url = QUrl::fromLocalFile(this->m_filePath);
+        QDesktopServices::openUrl(url);
     }
 
-    void onMenuEvent() {
-        // 在这里处理鼠标右键点击事件
+public:
+    void setSelected(bool selected)
+    {
+        if (m_selected != selected) {
+            m_selected = selected;
+        }
+    }
+
+    bool isSelected() const
+    {
+        return m_selected;
+    }
+
+    void reset() {
+        setStyleSheet("background: transparent;");
+        this->m_selected = false;
     }
 
 private:
     QString m_filePath;
+    bool m_selected;
 };
 
 #endif // IMAGE_H
