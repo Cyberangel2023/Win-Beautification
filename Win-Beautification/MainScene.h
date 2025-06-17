@@ -15,6 +15,7 @@
 #include <QIcon>
 #include <QDebug>
 #include <QStandardPaths>
+#include <QMenu>
 
 #include "ArchorPane.h"
 #include "ScrollPane.h"
@@ -45,20 +46,30 @@ private:
 
 public:
     // 其他成员函数
-    QSet<Image*> getSelected() {
+    QList<Image*> getSelected() {
         return selectedFiles;
     }
 
     void addSelected(Image file) {
-        selectedFiles.insert(&file);
+        this->selectedFiles.push_back(&file);
     }
 
     int getSelectedSize() {
         return selectedFiles.size();
     }
 
+    void resetFiles();
+
+private slots:
+    void onOpenActionTriggered();
+    void onCopyActionTriggered();
+    void onDeleteActionTriggered();
+
 private:
     Ui::MainScene *ui;
+
+    QMap<QString, Image*> icons;
+    QList<Image*> selectedFiles;
 
     QScreen* screen; // 屏幕
     QRect screenRect; // 屏幕大小
@@ -66,9 +77,9 @@ private:
 
     ArchorPane* archorPane;
     ScrollPane* scrollPane;
-    QMap<QString, Image*> icons;
 
-    QSet<Image*> selectedFiles;
+    QMenu *contextMenu; // 右键菜单
+    Image *contextMenuImage; // 用于存储右键点击的 Image 指针
 };
 
 #endif // MAINSCENE_H

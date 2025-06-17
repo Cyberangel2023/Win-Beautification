@@ -95,14 +95,20 @@ private slots:
     void onDoubleClicked() {
         // 在这里处理鼠标左键双击事件
         QUrl url = QUrl::fromLocalFile(this->m_filePath);
-        QDesktopServices::openUrl(url);
+        if (!QDesktopServices::openUrl(url)) {
+            //QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
+        }
     }
 
 public:
     void setSelected(bool selected)
     {
-        if (m_selected != selected) {
-            m_selected = selected;
+        this->m_selected = selected;
+        // 更新 UI 以显示选中状态，例如改变背景色
+        if (this->m_selected) {
+            setStyleSheet("background-color: rgba(255, 255, 255, 64);");
+        } else {
+            setStyleSheet("background: transparent;");
         }
     }
 
@@ -114,6 +120,10 @@ public:
     void reset() {
         setStyleSheet("background: transparent;");
         this->m_selected = false;
+    }
+
+    QString getFilePath() {
+        return this->m_filePath;
     }
 
 private:

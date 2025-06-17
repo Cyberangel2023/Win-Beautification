@@ -52,6 +52,19 @@ MainScene::MainScene(QWidget *parent)
     mainLayout->addWidget(this->archorPane);
 
     setLayout(mainLayout);
+
+    setMouseTracking(true);
+
+    // 创建右键菜单
+    contextMenu = new QMenu(this);
+    QAction *openAction = contextMenu->addAction("打开");
+    QAction *copyAction = contextMenu->addAction("复制");
+    QAction *deleteAction = contextMenu->addAction("删除");
+
+    // 连接菜单项的信号到槽函数
+    connect(openAction, &QAction::triggered, this, &MainScene::onOpenActionTriggered);
+    connect(copyAction, &QAction::triggered, this, &MainScene::onCopyActionTriggered);
+    connect(deleteAction, &QAction::triggered, this, &MainScene::onDeleteActionTriggered);
 }
 
 MainScene::~MainScene()
@@ -92,9 +105,10 @@ void MainScene::listDesktopFiles() {
 }
 
 void MainScene::mousePressEvent(QMouseEvent *event) {
+    QPoint clickPos = event->pos();
     if (event->button() == Qt::LeftButton) {
         // 检查点击是否在某个 Image 控件上
-        QWidget *child = childAt(event->pos());
+        QWidget *child = childAt(clickPos);
         if (child) {
             Image *clickedImage = qobject_cast<Image*>(child);
             if (clickedImage) {
@@ -105,40 +119,92 @@ void MainScene::mousePressEvent(QMouseEvent *event) {
                 if (ctrlPressed) {
                     // Ctrl 多选：切换选中状态
                     if (this->selectedFiles.contains(clickedImage)) {
-                        this->selectedFiles.remove(clickedImage);
+                        this->selectedFiles.removeOne(clickedImage);
                         clickedImage->reset();
                     } else {
-                        this->selectedFiles.insert(clickedImage);
+                        this->selectedFiles.push_back(clickedImage);
                         clickedImage->setSelected(true);
-                        clickedImage->setStyleSheet("background-color: rgba(255, 255, 255, 64);");
                     }
                 } else if (shiftPressed && !this->selectedFiles.isEmpty()) {
                     // Shift 多选：从最后一个选中的 Image 到当前点击的 Image 之间的所有 Image 都被选中
                     // 这里需要实现 Shift 多选逻辑
                 } else {
                     // 单选：清除之前的选中状态，选中当前点击的 Image
-                    foreach (Image *img, this->selectedFiles) {
-                        img->reset();
-                    }
-                    this->selectedFiles.clear();
-                    this->selectedFiles.insert(clickedImage);
+                    resetFiles();
+                    this->selectedFiles.push_back(clickedImage);
                     clickedImage->setSelected(true);
                 }
             } else {
                 // 点击了非 Image 控件（例如背景控件）
-                foreach (Image *img, this->selectedFiles) {
-                    img->reset();
-                }
-                this->selectedFiles.clear();
+                resetFiles();
             }
         } else {
-            qDebug() << "132";
+            // 点击了 MainScene 的背景区域（不在任何子控件上）
+            resetFiles();
         }
     } else if (event->button() == Qt::RightButton) {
         // 右键点击事件
+        QWidget *child = childAt(clickPos);
+        if (child) {
+            Image *clickedImage = qobject_cast<Image*>(child);
+            if (clickedImage) {
+                // 点击了 Image，显示 Image 的右键菜单
+                contextMenuImage = clickedImage; // 存储当前点击的 Image 指针
+                resetFiles();
+                this->selectedFiles.push_back(clickedImage);
+                clickedImage->setSelected(true);
+                contextMenu->exec(clickPos); // 在鼠标点击位置显示菜单
+            } else {
+                // 点击了非 Image 控件，可以隐藏菜单或执行其他操作
+                resetFiles();
+                contextMenu->hide();
+            }
+        } else {
+            // 点击了 MainScene 的背景区域，隐藏菜单
+            resetFiles();
+            contextMenu->hide();
+        }
     }
 }
 
 void MainScene::mouseReleaseEvent(QMouseEvent *event) {
     // 可以在这里处理鼠标释放事件
+}
+
+void MainScene::resetFiles() {
+    foreach (Image* img, this->selectedFiles) {
+        img->reset();
+    }
+    this->selectedFiles.clear();
+}
+
+// 菜单槽函数实现
+void MainScene::onOpenActionTriggered() {
+    if (contextMenuImage) {
+        QString filePath = contextMenuImage->getFilePath();
+        QUrl url = QUrl::fromLocalFile(filePath);
+        if (!QDesktopServices::openUrl(url)) {
+            //QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
+        }
+    }
+}
+
+void MainScene::onCopyActionTriggered() {
+    if (contextMenuImage) {
+        QString filePath = contextMenuImage->getFilePath();
+        // 在这里添加复制文件的逻辑
+    }
+}
+
+void MainScene::onDeleteActionTriggered() {
+    if (contextMenuImage) {
+        QString filePath = contextMenuImage->getFilePath();
+        // 在这里添加删除文件的逻辑
+        QFile file(filePath);
+        if (file.remove()) {
+            qDebug() << "文件删除成功";
+        } else {
+            qDebug() << "文件删除失败";
+        }
+    }
 }
