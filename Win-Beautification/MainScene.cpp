@@ -2,8 +2,11 @@
 #include "./ui_MainScene.h"
 
 #include <windows.h>
-#include <shlobj.h>
+#include <shlobj.h>  // 包含SHGetKnownFolderPath所需的头文件
+#include <wrl/client.h> // 用于COM接口的智能指针
 #include <shellapi.h>
+#include <QProcess>
+#include <QSystemTrayIcon>
 
 MainScene::MainScene(QWidget *parent)
     : QWidget(parent)
@@ -15,13 +18,15 @@ MainScene::MainScene(QWidget *parent)
     this->screenRect = this->screen->geometry();
     this->availableRect = screen->availableGeometry();
 
-    this->resize(availableRect.size());
+    this->resize(screenRect.size());
     this->move(0, 0);
     this->setWindowFlag(Qt::FramelessWindowHint); // 去除窗口边框
     this->setAttribute(Qt::WA_TranslucentBackground); // 去除窗口
+    this->setWindowFlags(this->windowFlags() | Qt::Tool | Qt::WindowStaysOnTopHint); // 任务栏不显示
 
     // 初始化 ArchorPane
     this->archorPane = new ArchorPane(this);
+    this->background = new ArchorPane(this);
 
     // 初始化 scrollPane
     this->scrollPane = new ScrollPane();
@@ -30,7 +35,7 @@ MainScene::MainScene(QWidget *parent)
     QWidget *contentWidget = new QWidget();
     QHBoxLayout *contentLayout = new QHBoxLayout(contentWidget);
     contentLayout->setContentsMargins(20, 0, 20, 0);
-    contentLayout->setSpacing(20);
+    contentLayout->setSpacing(21);
 
     // 加载文件按钮
     listDesktopFiles();
@@ -41,15 +46,34 @@ MainScene::MainScene(QWidget *parent)
 
     this->scrollPane->setWidget(contentWidget);
 
-    // 将 ScrollPane 添加到 ArchorPane 的布局中
+    // 设置 archorPane 的边距
+    QVBoxLayout *archorPaneLayout = qobject_cast<QVBoxLayout*>(this->archorPane->layout());
+    if (archorPaneLayout) {
+        archorPaneLayout->setContentsMargins(
+            screenRect.right() / 2 - 495,
+            screenRect.bottom() - 138,
+            screenRect.right() / 2 - 495,
+            58
+            );
+    }
+
+    // 将 archorPane 添加到 background 的布局中
+    QVBoxLayout *bgLayout = qobject_cast<QVBoxLayout*>(this->background->layout());
+    if (bgLayout) {
+        bgLayout->setContentsMargins(0, 0, 0, 0);
+        bgLayout->addWidget(this->archorPane);
+    }
+
+    // 将 scrollPane 添加到 archorPane 的布局中
     QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(this->archorPane->layout());
-    layout->addWidget(this->scrollPane);
+    if (layout) {
+        layout->addWidget(this->scrollPane);
+    }
 
     // 将 ArchorPane 添加到 MainScene 的布局中
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(availableRect.right() / 2 - 495, availableRect.bottom() - 80,
-                                   availableRect.right() / 2 - 495, 10);
-    mainLayout->addWidget(this->archorPane);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->addWidget(this->background);
 
     setLayout(mainLayout);
 
@@ -65,6 +89,32 @@ MainScene::MainScene(QWidget *parent)
     connect(openAction, &QAction::triggered, this, &MainScene::onOpenActionTriggered);
     connect(copyAction, &QAction::triggered, this, &MainScene::onCopyActionTriggered);
     connect(deleteAction, &QAction::triggered, this, &MainScene::onDeleteActionTriggered);
+
+    QSystemTrayIcon *trayIcon = new QSystemTrayIcon(QIcon("C:\\Users\\25444\\Desktop\\imgs\\desk.png"), this);
+    connect(trayIcon, &QSystemTrayIcon::activated, this, [=](QSystemTrayIcon::ActivationReason reason){
+        if (reason == QSystemTrayIcon::DoubleClick) {
+            showNormal();  // 恢复窗口显示
+        }
+    });
+    trayIcon->setToolTip("My Background App");
+    trayIcon->show();
+
+    QMenu *menu = new QMenu();
+
+    QAction *showAction = new QAction("显示", this);
+    connect(showAction, &QAction::triggered, this, &MainScene::showNormal);
+    menu->addAction(showAction);
+
+    QAction *hideAction = new QAction("隐藏", this);
+    connect(hideAction, &QAction::triggered, this, &MainScene::hide);
+    menu->addAction(hideAction);
+
+
+    QAction *quitAction = new QAction("退出", this);
+    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
+    menu->addAction(quitAction);
+
+    trayIcon->setContextMenu(menu);
 }
 
 MainScene::~MainScene()
@@ -75,6 +125,29 @@ MainScene::~MainScene()
 void MainScene::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
+    // 启用抗锯齿和高分辨率渲染
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QString wallpaperPath = "C:\\Users\\25444\\Desktop\\imgs\\Kiana1.jpg";
+    QPixmap backgroundPixmap(wallpaperPath); // 替换为你的背景图片路径
+
+    // 计算目标区域
+    QRect targetRect(0, 0, this->width(), this->height());
+    QRect sourceRect = backgroundPixmap.rect();
+
+    // 计算裁剪区域（保持宽高比）
+    if (backgroundPixmap.width() * this->height() > backgroundPixmap.height() * this->width()) {
+        sourceRect.setWidth(backgroundPixmap.height() * this->width() / this->height());
+        sourceRect.translate((backgroundPixmap.width() - sourceRect.width()) / 2, 0);
+    } else {
+        sourceRect.setHeight(backgroundPixmap.width() * this->height() / this->width());
+        sourceRect.translate(0, (backgroundPixmap.height() - sourceRect.height()) / 2);
+    }
+
+    // 直接绘制裁剪后的区域
+    painter.drawPixmap(targetRect, backgroundPixmap, sourceRect);
 }
 
 void MainScene::listDesktopFiles() {
@@ -101,6 +174,26 @@ void MainScene::listDesktopFiles() {
 
         Image* img = new Image(fileName, filePath, this);
         icons.insert(fileName, img);
+    }
+}
+
+void MainScene::mouseDoubleClickEvent(QMouseEvent *event) {
+    QPoint clickPos = event->pos();
+    if (event->button() == Qt::LeftButton) {
+        // 在这里处理鼠标左键双击事件
+        // 检查点击是否在某个 Image 控件上
+        QWidget *child = childAt(clickPos);
+        if (child) {
+            Image *clickedImage = qobject_cast<Image*>(child);
+            if (clickedImage) {
+                QUrl url = QUrl::fromLocalFile(clickedImage->getFilePath());
+                if (!QDesktopServices::openUrl(url)) {
+                    QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
+                    return;
+                }
+                this->hide();
+            }
+        }
     }
 }
 
@@ -184,8 +277,10 @@ void MainScene::onOpenActionTriggered() {
         QString filePath = contextMenuImage->getFilePath();
         QUrl url = QUrl::fromLocalFile(filePath);
         if (!QDesktopServices::openUrl(url)) {
-            //QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
+            QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
+            return;
         }
+        this->hide();
     }
 }
 
@@ -206,5 +301,18 @@ void MainScene::onDeleteActionTriggered() {
         } else {
             qDebug() << "文件删除失败";
         }
+    }
+}
+
+// 打开“此电脑”
+void MainScene::openThisPC() {
+    // 使用QProcess启动explorer.exe
+    QProcess::startDetached("explorer.exe");
+
+    // 检查是否成功
+    if (QProcess::startDetached("explorer.exe")) {
+        qDebug() << "已成功打开'此电脑'";
+    } else {
+        qCritical() << "打开'此电脑'失败:" << GetLastError();
     }
 }

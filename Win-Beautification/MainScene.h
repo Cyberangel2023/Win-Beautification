@@ -16,6 +16,9 @@
 #include <QDebug>
 #include <QStandardPaths>
 #include <QMenu>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 #include "ArchorPane.h"
 #include "ScrollPane.h"
@@ -39,10 +42,12 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private:
     void listDesktopFiles();
     QIcon getIconForFile(const QFileInfo &fileInfo);
+    void openThisPC();
 
 public:
     // 其他成员函数
@@ -75,6 +80,7 @@ private:
     QRect screenRect; // 屏幕大小
     QRect availableRect;  // 可用区域大小
 
+    ArchorPane* background;
     ArchorPane* archorPane;
     ScrollPane* scrollPane;
 

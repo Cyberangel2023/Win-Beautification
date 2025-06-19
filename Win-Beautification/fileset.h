@@ -40,8 +40,9 @@ private:
 
         if (hide) {
             // 隐藏桌面图标
+            ShowWindow(hWndIconView, SW_HIDE);
+        } else {
             ShowWindow(hWndIconView, SW_SHOW);
-            return true;
         }
         return false;
     }

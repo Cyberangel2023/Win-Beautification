@@ -1,6 +1,7 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include <QWidget>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPixmap>
@@ -18,8 +19,8 @@ class Image : public QLabel {
     Q_OBJECT
 
 public:
-    Image(const QString &name, const QString& filePath, QWidget *parent = nullptr)
-        : QLabel(parent), m_filePath(filePath), m_selected(false) {
+    Image(const QString &name, const QString& filePath, QWidget *parent)
+        : QLabel(parent), m_filePath(filePath), m_selected(false), parent(parent) {
         // 设置图片
         QPixmap pixmap;
         QFileInfo fileInfo(filePath);
@@ -27,7 +28,7 @@ public:
         QIcon icon = iconProvider.icon(fileInfo);
 
         // 强制图标大小
-        pixmap = icon.pixmap(QSize(50, 50));
+        pixmap = icon.pixmap(QSize(60, 60));
         setMinimumSize(60, 60);
         setMaximumSize(60, 60);
         setPixmap(pixmap);
@@ -41,7 +42,6 @@ public:
         setMouseTracking(true);
         setAttribute(Qt::WA_Hover);
         connect(this, &Image::hovered, this, &Image::onHovered);
-        connect(this, &Image::doubleClicked, this, &Image::onDoubleClicked);
     }
 
     QString getFilePath() const {
@@ -53,13 +53,6 @@ public:
     }
 
 protected:
-    void mouseDoubleClickEvent(QMouseEvent *event) override {
-        if (event->button() == Qt::LeftButton) {
-            emit doubleClicked();
-        }
-        QLabel::mouseDoubleClickEvent(event);
-    }
-
     bool event(QEvent *event) override {
         if (event->type() == QEvent::HoverEnter) {
             emit hovered();
@@ -91,15 +84,6 @@ private slots:
         setStyleSheet("background-color: rgba(255, 255, 255, 32);");
     }
 
-
-    void onDoubleClicked() {
-        // 在这里处理鼠标左键双击事件
-        QUrl url = QUrl::fromLocalFile(this->m_filePath);
-        if (!QDesktopServices::openUrl(url)) {
-            //QMessageBox::warning(this, "错误", "无法使用系统程序打开文件！");
-        }
-    }
-
 public:
     void setSelected(bool selected)
     {
@@ -129,6 +113,7 @@ public:
 private:
     QString m_filePath;
     bool m_selected;
+    QWidget parent;
 };
 
 #endif // IMAGE_H

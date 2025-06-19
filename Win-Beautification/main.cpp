@@ -1,4 +1,5 @@
 #include "MainScene.h"
+#include "topmainscene.h"
 #include "WallpaperStyle.h"
 #include "wallpaper.h"
 #include "fileset.h"
@@ -19,10 +20,15 @@ int main(int argc, char *argv[])
     // 设置壁纸路径
     QString wallpaperPath = "C:\\Users\\25444\\Desktop\\imgs\\Kiana1.jpg";
     // 使用QScopedPointer管理Wallpaper和FileSet的生命周期
-    //QScopedPointer<Wallpaper> wallpaper(new Wallpaper(style, wallpaperPath));
-    //QScopedPointer<FileSet> fileSet(new FileSet());
+    QScopedPointer<Wallpaper> wallpaper(new Wallpaper(style, wallpaperPath));
+    FileSet::instance()->setHide(false);
 
     MainScene w;
     w.show();
+
+    // 创建一个新窗口
+    TopMainScene* topWindow = new TopMainScene(&w);
+    topWindow->show();
+
     return a.exec();
 }

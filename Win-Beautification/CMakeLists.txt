@@ -30,6 +30,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ScrollPane.h
         Image.h
         fileset.cpp
+        TopMainScene.h TopMainScene.cpp
 
 
 
